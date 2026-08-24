@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Space Explorer - Aventure Spatiale</title>
+    
+    <!-- ========================================== -->
+    <!-- SECTION STYLES CSS : DESIGN ET INTERFACE   -->
+    <!-- ========================================== -->
+    <style>
+        /* Variables globales pour les couleurs du jeu (thème spatial) */
+        :root {
+            --bg-color: #030712;
+            --card-bg: rgba(15, 23, 42, 0.9);
+            --text-color: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --accent-dark: #0284c7;
+            --danger: #f43f5e;
+            --danger-glow: rgba(244, 63, 94, 0.4);
+        }
+
+        /* Réinitialisation de base pour tous les éléments */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, 'Segoe UI', sans-serif;
+            touch-action: manipulation;
+        }
+
+        /* Mise en page globale optimisée pour PC et mobile */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100dvh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* Conteneur principal optimisé pour grand écran */
+        #app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 950px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(56, 189, 248, 0.1);
+            border-left: 1px solid rgba(56, 189, 248, 0.2);
+            border-right: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        /* Ambiance visuelle : Animation du fond étoilé et nébuleuse */
+        #space-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #38bdf8, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 5s linear infinite;
+            opacity: 0.4;
+        }
+
+        #nebula-effect {
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(circle at center, rgba(147, 51, 234, 0.12) 0%, rgba(56, 189, 248, 0.05) 40%, transparent 70%);
+            animation: drift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-200px); }
+        }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 30px) scale(1.1); }
+        }
+
+        /* Style de l'en-tête (Header) */
+        header {
+            text-align: center;
+            padding: 14px 10px;
+            background: rgba(3, 7, 18, 0.9);
+            border-bottom: 1px solid var(--accent-dark);
+            box-shadow: 0 0 15px var(--accent-glow);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.4rem; 
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--accent);
+        }
+
+        /* Conteneur des barres de statistiques */
+        #stats-container {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 6px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 19%;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 3px;
+        }
+
+        .stat-name {
+            font-size: 0.55rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            font-size: 0.9rem;
+        }
+
+        .bar-bg {
+            width: 100%;
+            height: 6px;
+            background-color: #020617;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            margin-bottom: 3px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background-color: var(--accent);
+            width: 50%;
+            transition: width 0.4s ease, background-color 0.4s ease;
+            box-shadow: 0 0 6px var(--accent);
+        }
+
+        .stat-pct {
+            font-size: 0.6rem;
+            color: #cbd5e1;
+            font-weight: bold;
+        }
+
+        /* Animations de montée / descente des jauges */
+        @keyframes pulseUp {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.5); box-shadow: 0 0 12px #34d399; }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes pulseDown {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.5); box-shadow: 0 0 12px var(--danger); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        .gauge-bump-up {
+            animation: pulseUp 0.4s ease-in-out;
+        }
+
+        .gauge-bump-down {
+            animation: pulseDown 0.4s ease-in-out;
+        }
+
+        /* Zone centrale où les cartes d'événements s'affichent */
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        /* Style visuel de la carte interactive déplaçable */
+        .card {
+            width: 90%;
+            max-width: 380px;
+            height: 460px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.15), inset 0 0 15px rgba(56, 189, 248, 0.05);
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #f1f5f9;
+            margin-bottom: 10px;
+            padding-top: 5px;
+        }
+
+        .card-effects {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
+            padding-top: 12px;
+        }
+
+        .effect-col {
+            width: 48%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.75rem;
+        }
+
+        .left-eff { align-items: flex-start; text-align: left; }
+        .right-eff { align-items: flex-end; text-align: right; }
+
+        .choice-title {
+            font-weight: bold;
+            margin-bottom: 2px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .left-eff .choice-title { color: var(--danger); text-shadow: 0 0 5px var(--danger-glow); }
+        .right-eff .choice-title { color: var(--accent); text-shadow: 0 0 5px var(--accent-glow); }
+
+        .impact-icons-container {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .left-eff .impact-icons-container { justify-content: flex-start; }
+        .right-eff .impact-icons-container { justify-content: flex-end; }
+
+        .impact-badge {
+            background: rgba(3, 7, 18, 0.6);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border: 1px solid rgba(56, 189, 248, 0.1);
+        }
+
+        .impact-badge.up { color: #34d399; }
+        .impact-badge.down { color: var(--danger); }
+        .impact-badge.neutral { color: #64748b; }
+
+        .hint {
+            position: absolute;
+            top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 5;
+            letter-spacing: 2px;
+        }
+        .hint.left { left: 20px; color: var(--danger); text-shadow: 0 0 8px var(--danger); }
+        .hint.right { right: 20px; color: var(--accent); text-shadow: 0 0 8px var(--accent); }
+
+        /* Écran de fin de partie (Game Over) */
+        #game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(3, 7, 18, 0.96);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        #go-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            animation: pulse-icon 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-icon {
+            0% { transform: scale(1); filter: drop-shadow(0 0 5px var(--danger)); }
+            100% { transform: scale(1.15); filter: drop-shadow(0 0 20px var(--danger)); }
+        }
+
+        #game-over h2 { color: var(--danger); margin-bottom: 10px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        #game-over-reason { margin-bottom: 20px; font-size: 1rem; color: #cbd5e1; max-width: 320px; line-height: 1.4; }
+        #game-over p { margin-bottom: 20px; font-size: 1rem; color: var(--accent); }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            background-color: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: all 0.2s;
+        }
+        button:hover { background-color: var(--accent); color: var(--bg-color); }
+
+        /* Boutons de contrôle pour PC */
+        #desktop-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 14px;
+            z-index: 10;
+            background: rgba(3, 7, 18, 0.9);
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        
+        .btn-swipe {
+            background-color: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent-dark);
+            color: var(--accent);
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .btn-swipe:hover {
+            background-color: var(--accent);
+            color: var(--bg-color);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Conteneur principal -->
+    <div id="app-container">
+
+        <!-- Effets visuels d'arrière-plan -->
+        <div id="space-bg"></div>
+        <div id="nebula-effect"></div>
+
+        <!-- En-tête du jeu -->
+        <header>
+            <h1>Space Explorer</h1>
+        </header>
+
+        <!-- Affichage des jauges -->
+        <div id="stats-container">
+            <div class="stat" id="stat-box-cohesion">
+                <div class="stat-header">
+                    <span class="stat-icon">🤝</span>
+                    <span class="stat-name">Moral</span>
+                </div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-cohesion"></div></div>
+                <div class="stat-pct" id="pct-cohesion">50%</div>
+            </div>
+            <div class="stat" id="stat-box-vaisseau">
+                <div class="stat-header">
+                    <span class="stat-icon">🚀</span>
+                    <span class="stat-name">Vaisseau</span>
+                </div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-vaisseau"></div></div>
+                <div class="stat-pct" id="pct-vaisseau">50%</div>
+            </div>
+            <div class="stat" id="stat-box-carburant">
+                <div class="stat-header">
+                    <span class="stat-icon">⚡</span>
+                    <span class="stat-name">Énergie</span>
+                </div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-carburant"></div></div>
+                <div class="stat-pct" id="pct-carburant">50%</div>
+            </div>
+            <div class="stat" id="stat-box-ressources">
+                <div class="stat-header">
+                    <span class="stat-icon">📦</span>
+                    <span class="stat-name">Vivres</span>
+                </div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-ressources"></div></div>
+                <div class="stat-pct" id="pct-ressources">50%</div>
+            </div>
+            <div class="stat" id="stat-box-confiance">
+                <div class="stat-header">
+                    <span class="stat-icon">⭐</span>
+                    <span class="stat-name">Confiance</span>
+                </div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-confiance"></div></div>
+                <div class="stat-pct" id="pct-confiance">50%</div>
+            </div>
+        </div>
+
+        <!-- Zone principale de la carte -->
+        <main id="card-area"></main>
+
+        <!-- Boutons de contrôle pour PC / Alternatif -->
+        <div id="desktop-controls">
+            <button class="btn-swipe" onclick="triggerSwipe('left')">← Rejeter</button>
+            <button class="btn-swipe" onclick="triggerSwipe('right')">Valider →</button>
+        </div>
+
+        <!-- Écran de Game Over -->
+        <div id="game-over">
+            <div id="go-icon">💀</div>
+            <h2 id="game-over-title">MISSION ÉCHOUÉE</h2>
+            <p id="game-over-reason">Le vaisseau a été détruit.</p>
+            <p>Jours survécus : <span id="score-days">0</span></p>
+            <button onclick="resetGame()">Relancer</button>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION JAVASCRIPT : LOGIQUE DU JEU        -->
+    <!-- ========================================== -->
+    <script>
+        let stats = { cohesion: 50, vaisseau: 50, carburant: 50, ressources: 50, confiance: 50 };
+        let daysSurvived = 0;
+        let currentCard = null;
+        let recentCards = [];
+        const HISTORY_LIMIT = 10;
+
+       const situations = [
+            { text: "Une étrange lueur bleue émane de la salle des machines. L'ingénieur en chef veut l'étudier de près.", leftText: "Interdire", rightText: "Autoriser", leftImpact: { cohesion: -10, vaisseau: +5, carburant: 0, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +5, vaisseau: -15, carburant: +20, ressources: 0, confiance: +5 } },
+            { text: "L'IA du vaisseau souffre d'un bug émotionnel et refuse d'allumer le chauffage pour 'faire des économies'.", leftText: "La reprogrammer", rightText: "Mettre un pull", leftImpact: { cohesion: 0, vaisseau: -10, carburant: -5, ressources: 0, confiance: +10 }, rightImpact: { cohesion: -15, vaisseau: 0, carburant: +15, ressources: 0, confiance: -10 } },
+            { text: "Nous croisons un cimetière de vaisseaux. La tentation de récupérer des pièces est grande, mais c'est risqué.", leftText: "Passer outre", rightText: "Piller", leftImpact: { cohesion: -5, vaisseau: 0, carburant: 0, ressources: -5, confiance: 0 }, rightImpact: { cohesion: +10, vaisseau: +15, carburant: -10, ressources: +10, confiance: -5 } },
+            { text: "Le système de recyclage de l'eau est tombé en panne. L'équipage commence à paniquer.", leftText: "Rationner", rightText: "Réparer (Urgence)", leftImpact: { cohesion: -20, vaisseau: 0, carburant: 0, ressources: -10, confiance: -10 }, rightImpact: { cohesion: +5, vaisseau: -10, carburant: -15, ressources: +15, confiance: +15 } },
+            { text: "Un champignon extraterrestre comestible pousse mystérieusement dans les conduits d'aération.", leftText: "Incinérer", rightText: "Récolter", leftImpact: { cohesion: -10, vaisseau: +5, carburant: -5, ressources: -10, confiance: 0 }, rightImpact: { cohesion: +10, vaisseau: -10, carburant: 0, ressources: +20, confiance: -5 } },
+            { text: "Une onde de choc issue d'une supernova lointaine va nous frapper. Faut-il orienter les boucliers à l'avant ?", leftText: "Maintenir", rightText: "Réorienter", leftImpact: { cohesion: 0, vaisseau: -25, carburant: -10, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +5, vaisseau: -5, carburant: -20, ressources: 0, confiance: +15 } },
+            { text: "Un cargo commercial en détresse demande du carburant pour atteindre la station la plus proche.", leftText: "Refuser", rightText: "Partager", leftImpact: { cohesion: -5, vaisseau: 0, carburant: +10, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +10, vaisseau: 0, carburant: -15, ressources: +5, confiance: +10 } },
+            { text: "Des parasites biologiques ont contaminé une partie des réserves de nourriture lyophilisée.", leftText: "Jeter le stock", rightText: "Trier à la main", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: -20, confiance: 0 }, rightImpact: { cohesion: -5, vaisseau: -5, carburant: 0, ressources: -10, confiance: +5 } },
+            { text: "Un membre d'équipage demande l'autorisation d'aménager une serre hydroponique clandestine.", leftText: "Interdire", rightText: "Permettre", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +15, vaisseau: -5, carburant: -5, ressources: +10, confiance: 0 } },
+            { text: "Le radar détecte une anomalie gravitationnelle cachant potentiellement un raccourci spatial.", leftText: "Ignorer", rightText: "Explorer", leftImpact: { cohesion: 0, vaisseau: 0, carburant: +5, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +5, vaisseau: -20, carburant: +15, ressources: -5, confiance: -5 } },
+            { text: "Une grève perlée éclate : l'équipage réclame de meilleures rations de divertissement numérique.", leftText: "Céder", rightText: "Sanctionner", leftImpact: { cohesion: +15, vaisseau: 0, carburant: -5, ressources: -10, confiance: -10 }, rightImpact: { cohesion: -20, vaisseau: 0, carburant: 0, ressources: 0, confiance: +15 } },
+            { text: "Un astéroïde riche en minerais rares se trouve sur notre trajectoire. On peut le miner en urgence.", leftText: "Esquiver", rightText: "Miner", leftImpact: { cohesion: 0, vaisseau: +5, carburant: -5, ressources: 0, confiance: 0 }, rightImpact: { cohesion: -5, vaisseau: -15, carburant: -10, ressources: +25, confiance: +5 } },
+            { text: "Le système de communication longue portée capte un signal énigmatique en boucle.", leftText: "Ignorer", rightText: "Décoder", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +5, vaisseau: -5, carburant: -10, ressources: 0, confiance: +10 } },
+            { text: "Panne générale de l'éclairage artificiel dans les quartiers de vie. Ambiance crépusculaire.", leftText: "Réparer plus tard", rightText: "Réparation immédiate", leftImpact: { cohesion: -15, vaisseau: 0, carburant: +5, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: -5, carburant: -10, ressources: 0, confiance: +5 } },
+            { text: "Un croiseur militaire de patrouille exige une fouille inopinée de nos cales.", leftText: "Refuser (Fuir)", rightText: "Collaborer", leftImpact: { cohesion: +10, vaisseau: -20, carburant: -20, ressources: -10, confiance: -10 }, rightImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: -15, confiance: +10 } },
+            { text: "L'ordinateur de bord suggère d'optimiser la trajectoire en passant très près d'une étoile.", leftText: "Route sûre", rightText: "Route risquée", leftImpact: { cohesion: 0, vaisseau: 0, carburant: -15, ressources: 0, confiance: 0 }, rightImpact: { cohesion: -5, vaisseau: -10, carburant: +25, ressources: 0, confiance: +5 } },
+            { text: "Des rats de sas extraterrestres ont rongé des câbles secondaires de propulseurs.", leftText: "Piéger la zone", rightText: "Lâcher du gaz", leftImpact: { cohesion: -5, vaisseau: -10, carburant: 0, ressources: -5, confiance: +5 }, rightImpact: { cohesion: -15, vaisseau: +5, carburant: -5, ressources: -10, confiance: -5 } },
+            { text: "Un voyageur clandestin a été découvert endormi dans un conteneur de fret vide.", leftText: "Le débarquer", rightText: "L'intégrer", leftImpact: { cohesion: -15, vaisseau: 0, carburant: 0, ressources: +5, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: 0, carburant: 0, ressources: -15, confiance: +5 } },
+            { text: "Le générateur de bouclier surchauffe lors de la traversée d'une tempête de micrométéorites.", leftText: "Couper les boucliers", rightText: "Pousser les moteurs", leftImpact: { cohesion: -10, vaisseau: -25, carburant: +5, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +5, vaisseau: -15, carburant: -20, ressources: 0, confiance: +10 } },
+            { text: "Un membre d'équipage propose d'organiser un tournoi de jeux de société intergalactiques pour remonter le moral.", leftText: "Refuser", rightText: "Autoriser", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +20, vaisseau: 0, carburant: -5, ressources: -5, confiance: +5 } },
+            { text: "Découverte d'une balise de détresse automatisée émanant d'une lune glacée.", leftText: "Ignorer", rightText: "Envoyer une navette", leftImpact: { cohesion: -5, vaisseau: 0, carburant: 0, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +10, vaisseau: -10, carburant: -15, ressources: +15, confiance: +10 } },
+            { text: "Le stock de café et de stimulants est totalement épuisé. L'équipage frôle la mutinerie de fatigue.", leftText: "Ignorer la plainte", rightText: "Chercher un négoce", leftImpact: { cohesion: -20, vaisseau: 0, carburant: 0, ressources: 0, confiance: -15 }, rightImpact: { cohesion: +10, vaisseau: 0, carburant: -15, ressources: +10, confiance: +5 } },
+            { text: "Un brouilleur alien perturbe nos instruments de bord et simule de fausses pannes.", leftText: "Redémarrer en boucle", rightText: "Isoler le module", leftImpact: { cohesion: -10, vaisseau: -10, carburant: -10, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +5, vaisseau: -5, carburant: -5, ressources: 0, confiance: +10 } },
+            { text: "L'infirmerie signale une épidémie de grippe cosmique hautement contagieuse mais bénigne.", leftText: "Quarantaine stricte", rightText: "Remèdes naturels", leftImpact: { cohesion: -15, vaisseau: 0, carburant: 0, ressources: -10, confiance: +5 }, rightImpact: { cohesion: +5, vaisseau: 0, carburant: 0, ressources: -15, confiance: -5 } },
+            { text: "Un marchand itinérant propose un échange de matériel de navigation contre des vivres.", leftText: "Refuser l'offre", rightText: "Accepter l'échange", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: +5, confiance: 0 }, rightImpact: { cohesion: +5, vaisseau: +10, carburant: +5, ressources: -20, confiance: 0 } },
+            { text: "Le système de gravité artificielle flanche périodiquement dans le secteur dortoir.", leftText: "Dormir en apesanteur", rightText: "Réparation lourde", leftImpact: { cohesion: -10, vaisseau: -5, carburant: +5, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +10, vaisseau: -10, carburant: -10, ressources: -5, confiance: +10 } },
+            { text: "Une faille temporelle locale décale l'horloge interne du vaisseau de quelques minutes.", leftText: "Ne rien changer", rightText: "Recaler les serveurs", leftImpact: { cohesion: -5, vaisseau: -5, carburant: 0, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +5, vaisseau: -5, carburant: -5, ressources: 0, confiance: +5 } },
+            { text: "Un drone de prospection autonome revient endommagé avec un échantillon radioactif.", leftText: "Éjecter le drone", rightText: "Analyser l'échantillon", leftImpact: { cohesion: 0, vaisseau: +5, carburant: 0, ressources: -5, confiance: 0 }, rightImpact: { cohesion: -10, vaisseau: -10, carburant: +15, ressources: +10, confiance: -5 } },
+            { text: "Les filtres à oxygène principaux dégagent une odeur suspecte de brûlé.", leftText: "Aérer l'habitacle", rightText: "Changer les filtres", leftImpact: { cohesion: -15, vaisseau: -5, carburant: -5, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: -10, carburant: 0, ressources: -15, confiance: +10 } },
+            { text: "Un groupe de réfugiés spatiaux sollicite l'asile à bord de notre déjà modeste appareil.", leftText: "Refuser net", rightText: "Accueillir", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: +10, confiance: -10 }, rightImpact: { cohesion: +15, vaisseau: -10, carburant: -5, ressources: -25, confiance: +15 } },
+            { text: "Le processeur central surchauffe suite à un calcul de trajectoire complexe à travers une nébuleuse.", leftText: "Ralourdir la route", rightText: "Forcer le processeur", leftImpact: { cohesion: 0, vaisseau: 0, carburant: -20, ressources: 0, confiance: 0 }, rightImpact: { cohesion: -5, vaisseau: -15, carburant: +10, ressources: 0, confiance: -5 } },
+            { text: "Un concours de cuisine interarmées est organisé dans la kitchenette par l'équipage.", leftText: "Interdire par sécurité", rightText: "Laisser faire", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: +5, confiance: -5 }, rightImpact: { cohesion: +15, vaisseau: -5, carburant: -5, ressources: -10, confiance: +5 } },
+            { text: "Des pannes de courant intermittentes touchent le réfectoire principal.", leftText: "Manger dans le noir", rightText: "Dériver l'énergie", leftImpact: { cohesion: -15, vaisseau: 0, carburant: +10, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: 0, carburant: -15, ressources: 0, confiance: +5 } },
+            { text: "Un explorateur solitaire propose de nous vendre une carte stellaire pirate hautement détaillée.", leftText: "Refuser", rightText: "Acheter", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: +10, confiance: 0 }, rightImpact: { cohesion: +5, vaisseau: +10, carburant: -10, ressources: -15, confiance: +5 } },
+            { text: "La coque externe subit des vibrations étranges lors du passage en vitesse sub-luminique.", leftText: "Ignorer", rightText: "Ralentir l'allure", leftImpact: { cohesion: -5, vaisseau: -20, carburant: +10, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +5, vaisseau: +10, carburant: -15, ressources: 0, confiance: +5 } },
+            { text: "Une avarie bloque les portes automatiques du sas de décontamination.", leftText: "Forcer manuellement", rightText: "Condamner le sas", leftImpact: { cohesion: -5, vaisseau: -10, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: -15, vaisseau: +5, carburant: 0, ressources: -10, confiance: -5 } },
+            { text: "Un satellite espion inconnu nous prend en photo et nous verrouille avec un faisceau de ciblage.", leftText: "Le détruire", rightText: "L'ignorer poliment", leftImpact: { cohesion: +5, vaisseau: -10, carburant: -10, ressources: 0, confiance: +5 }, rightImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: 0, confiance: -10 } },
+            { text: "Les réserves d'eau chaude sont à sec : douches froides obligatoires pour tout le monde.", leftText: "Imposer la mesure", rightText: "Réparer en urgence", leftImpact: { cohesion: -20, vaisseau: 0, carburant: +10, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: -5, carburant: -15, ressources: 0, confiance: +5 } },
+            { text: "Une IA rebelle pirate brièvement nos écrans pour diffuser un manifeste philosophique.", leftText: "Couper l'écran", rightText: "Débattre avec l'IA", leftImpact: { cohesion: -5, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +10, vaisseau: -5, carburant: -5, ressources: 0, confiance: +5 } },
+            { text: "Un dépôt abandonné de carburant spatial flotte près de notre route, mais son intégrité est douteuse.", leftText: "Éviter", rightText: "Transférer", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: -5, vaisseau: -10, carburant: +30, ressources: 0, confiance: -5 } },
+            { text: "Des tensions ethniques ou culturelles apparaissent entre deux factions de l'équipage.", leftText: "Séparer les clans", rightText: "Médiation collective", leftImpact: { cohesion: -15, vaisseau: 0, carburant: 0, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +15, vaisseau: 0, carburant: 0, ressources: -5, confiance: +10 } },
+            { text: "Un essaim de micro-comètes menace de rayer les hublots du poste de pilotage.", leftText: "Activer les essuie-glaces laser", rightText: "Changer de cap", leftImpact: { cohesion: +5, vaisseau: -10, carburant: -10, ressources: 0, confiance: +5 }, rightImpact: { cohesion: 0, vaisseau: 0, carburant: -15, ressources: 0, confiance: 0 } },
+            { text: "L'imprimante 3D de nourriture est piratée et ne produit que des plats à base de algues vertes gélatineuses.", leftText: "Supporter en silence", rightText: "Forcer le reset", leftImpact: { cohesion: -15, vaisseau: 0, carburant: 0, ressources: +10, confiance: -10 }, rightImpact: { cohesion: +10, vaisseau: -5, carburant: -5, ressources: -10, confiance: +5 } },
+            { text: "Une station orbitale abandonnée propose un signal Wi-Fi public gratuit et des archives culturelles.", leftText: "Ne pas se connecter", rightText: "Télécharger", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +15, vaisseau: -10, carburant: -5, ressources: 0, confiance: +10 } },
+            { text: "Un dysfonctionnement simule des alertes d'incendie toutes les dix minutes dans les quartiers", leftText: "Désactiver l'alarme", rightText: "Inspecter chaque zone", leftImpact: { cohesion: -10, vaisseau: -15, carburant: 0, ressources: 0, confiance: -15 }, rightImpact: { cohesion: +10, vaisseau: +5, carburant: -10, ressources: 0, confiance: +10 } },
+            { text: "Un colis mystérieux est retrouvé sans étiquette dans le sas de chargement.", leftText: "L'éjecter dans l'espace", rightText: "L'ouvrir", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +10, vaisseau: -10, carburant: 0, ressources: +15, confiance: -5 } },
+            { text: "Une tempête de plasma perturbe la visibilité extérieure. Le pilotage manuel devient délicat.", leftText: "Piloter à l'instinct", rightText: "Activer le pilotage auto", leftImpact: { cohesion: +5, vaisseau: -20, carburant: -10, ressources: 0, confiance: +5 }, rightImpact: { cohesion: -10, vaisseau: -5, carburant: +15, ressources: 0, confiance: -5 } },
+            { text: "Un membre d'équipage demande à célébrer un mariage spatial en direct avec la Terre.", leftText: "Refuser pour le travail", rightText: "Autoriser la fête", leftImpact: { cohesion: -15, vaisseau: 0, carburant: 0, ressources: 0, confiance: -10 }, rightImpact: { cohesion: +20, vaisseau: 0, carburant: -5, ressources: -10, confiance: +10 } },
+            { text: "Le système de refroidissement principal accumule du givre spatial. Les performances chutent.", leftText: "Ignorer", rightText: "Dégivrage manuel", leftImpact: { cohesion: -5, vaisseau: -15, carburant: 0, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +5, vaisseau: +10, carburant: -10, ressources: 0, confiance: +5 } },
+            { text: "Un signal de détresse provient d'une épave piégée dans le champ gravitationnel d'une planète.", leftText: "Ignorer le piège", rightText: "Tenter le sauvetage", leftImpact: { cohesion: -10, vaisseau: 0, carburant: +5, ressources: 0, confiance: -5 }, rightImpact: { cohesion: +15, vaisseau: -20, carburant: -20, ressources: +20, confiance: +15 } },
+            { text: "La qualité de l'air baisse légèrement, causant une légère somnolence générale chez les officiers.", leftText: "Boire du café fort", rightText: "Purge d'oxygène", leftImpact: { cohesion: -10, vaisseau: 0, carburant: 0, ressources: -5, confiance: -5 }, rightImpact: { cohesion: +10, vaisseau: 0, carburant: -15, ressources: 0, confiance: +10 } },
+            { text: "Un marchand propose de troquer des pièces de rechange contre des contes et histoires de notre Terre d'origine.", leftText: "Refuser", rightText: "Accepter l'échange", leftImpact: { cohesion: 0, vaisseau: 0, carburant: 0, ressources: 0, confiance: 0 }, rightImpact: { cohesion: +10, vaisseau: +15, carburant: 0, ressources: -10, confiance: +5 } }
+        ];
+
+        function initGame() {
+            updateBars({});
+            drawCard();
+        }
+
+        function updateBars(impacts = {}) {
+            const keys = ['cohesion', 'vaisseau', 'carburant', 'ressources', 'confiance'];
+            keys.forEach(key => {
+                let bar = document.getElementById('bar-' + key);
+                let pct = document.getElementById('pct-' + key);
+                let statBox = document.getElementById('stat-box-' + key);
+                let val = stats[key];
+                
+                bar.style.width = val + '%';
+                pct.innerText = val + '%';
+                
+                if (val < 20) {
+                    bar.style.backgroundColor = 'var(--danger)';
+                    bar.style.boxShadow = '0 0 6px var(--danger)';
+                } else if (val > 80) {
+                    bar.style.backgroundColor = '#34d399';
+                    bar.style.boxShadow = '0 0 6px #34d399';
+                } else {
+                    bar.style.backgroundColor = 'var(--accent)';
+                    bar.style.boxShadow = '0 0 6px var(--accent)';
+                }
+
+                // Animation de la jauge ciblée
+                if (impacts[key] !== undefined && impacts[key] !== 0) {
+                    statBox.classList.remove('gauge-bump-up', 'gauge-bump-down');
+                    void statBox.offsetWidth; // Force reflow pour relancer l'animation
+                    if (impacts[key] > 0) {
+                        statBox.classList.add('gauge-bump-up');
+                    } else {
+                        statBox.classList.add('gauge-bump-down');
+                    }
+                }
+            });
+        }
+
+        function formatImpactIcons(impactObj) {
+            const icons = { cohesion: '🤝', vaisseau: '🚀', carburant: '⚡', ressources: '📦', confiance: '⭐' };
+            let result = '';
+            let hasImpact = false;
+            
+            for (let key in impactObj) {
+                if (impactObj[key] !== 0) {
+                    hasImpact = true;
+                    let directionClass = impactObj[key] > 0 ? 'up' : 'down';
+                    let arrow = impactObj[key] > 0 ? '▲' : '▼';
+                    result += `<span class="impact-badge ${directionClass}" title="${key}">${icons[key]} ${arrow}</span>`;
+                }
+            }
+            return hasImpact ? `<div class="impact-icons-container">${result}</div>` : '<div class="impact-icons-container"><span class="impact-badge neutral">Neutre</span></div>';
+        }
+
+        function drawCard() {
+            const cardArea = document.getElementById('card-area');
+            cardArea.innerHTML = '';
+            
+            let availableIndices = [];
+            for (let i = 0; i < situations.length; i++) {
+                if (!recentCards.includes(i)) {
+                    availableIndices.push(i);
+                }
+            }
+
+            if (availableIndices.length === 0) {
+                recentCards.shift();
+                availableIndices.push(Math.floor(Math.random() * situations.length));
+            }
+
+            const randIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            recentCards.push(randIndex);
+            if (recentCards.length > HISTORY_LIMIT) recentCards.shift(); 
+
+            currentCard = situations[randIndex];
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            card.innerHTML = `
+                <div class="hint left">REJETÉ</div>
+                <div class="hint right">VALIDÉ</div>
+                <div class="card-text">${currentCard.text}</div>
+                <div class="card-effects">
+                    <div class="effect-col left-eff">
+                        <div class="choice-title">← ${currentCard.leftText}</div>
+                        ${formatImpactIcons(currentCard.leftImpact)}
+                    </div>
+                    <div class="effect-col right-eff">
+                        <div class="choice-title">${currentCard.rightText} →</div>
+                        ${formatImpactIcons(currentCard.rightImpact)}
+                    </div>
+                </div>
+            `;
+
+            setupSwipe(card);
+            cardArea.appendChild(card);
+        }
+
+        function makeChoice(direction) {
+            let impact = direction === 'left' ? currentCard.leftImpact : currentCard.rightImpact;
+            
+            stats.cohesion += impact.cohesion;
+            stats.vaisseau += impact.vaisseau;
+            stats.carburant += impact.carburant;
+            stats.ressources += impact.ressources;
+            stats.confiance += impact.confiance;
+
+            for(let key in stats) {
+                if(stats[key] > 100) stats[key] = 100;
+                if(stats[key] < 0) stats[key] = 0;
+            }
+
+            daysSurvived++;
+            updateBars(impact);
+            checkGameOver();
+        }
+
+        function checkGameOver() {
+            let dead = false;
+            let title = "MISSION ÉCHOUÉE";
+            let reason = "";
+            let icon = "💀";
+
+            if (stats.cohesion <= 0) {
+                dead = true; icon = "✊"; title = "MUTINERIE"; reason = "L'équipage s'est soulevé et vous a éjecté.";
+            } else if (stats.vaisseau <= 0) {
+                dead = true; icon = "💥"; title = "COQUE BRISÉE"; reason = "Le vaisseau s'est désintégré en orbite.";
+            } else if (stats.carburant <= 0) {
+                dead = true; icon = "🌌"; title = "PANNE SÈCHE"; reason = "Les réacteurs sont à sec, vous dérivez.";
+            } else if (stats.ressources <= 0) {
+                dead = true; icon = "☠️"; title = "FAMINE"; reason = "Plus de vivres ni d'oxygène à bord.";
+            } else if (stats.confiance <= 0) {
+                dead = true; icon = "⚖️"; title = "DESTITUTION"; reason = "L'état-major a voté votre destitution.";
+            }
+
+            if (dead) {
+                document.getElementById('go-icon').innerText = icon;
+                document.getElementById('game-over-title').innerText = title;
+                document.getElementById('game-over-reason').innerText = reason;
+                document.getElementById('score-days').innerText = daysSurvived;
+                document.getElementById('game-over').style.display = 'flex';
+            } else {
+                setTimeout(drawCard, 250); 
+            }
+        }
+
+        function resetGame() {
+            stats = { cohesion: 50, vaisseau: 50, carburant: 50, ressources: 50, confiance: 50 };
+            daysSurvived = 0;
+            recentCards = []; 
+            document.getElementById('game-over').style.display = 'none';
+            initGame();
+        }
+
+        function triggerSwipe(direction) {
+            const card = document.querySelector('.card');
+            if(!card) return;
+            
+            card.style.transition = 'transform 0.3s ease-out, opacity 0.3s';
+            card.style.transform = direction === 'left' ? 'translateX(-350px) rotate(-20deg)' : 'translateX(350px) rotate(20deg)';
+            card.style.opacity = '0';
+            
+            setTimeout(() => { makeChoice(direction); }, 250);
+        }
+
+        function setupSwipe(card) {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+
+            const onDragStart = (e) => {
+                isDragging = true;
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                card.style.transition = 'none';
+            };
+
+            const onDragMove = (e) => {
+                if (!isDragging) return;
+                currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                let pullDeltaX = currentX - startX;
+                let rotate = pullDeltaX * 0.08;
+                
+                card.style.transform = `translateX(${pullDeltaX}px) rotate(${rotate}deg)`;
+
+                const hintLeft = card.querySelector('.hint.left');
+                const hintRight = card.querySelector('.hint.right');
+                
+                if (pullDeltaX < -30) {
+                    hintLeft.style.opacity = Math.min(1, Math.abs(pullDeltaX) / 100);
+                    hintRight.style.opacity = 0;
+                } else if (pullDeltaX > 30) {
+                    hintRight.style.opacity = Math.min(1, Math.abs(pullDeltaX) / 100);
+                    hintLeft.style.opacity = 0;
+                } else {
+                    hintLeft.style.opacity = 0;
+                    hintRight.style.opacity = 0;
+                }
+            };
+
+            const onDragEnd = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                card.style.transition = 'transform 0.3s ease';
+
+                let endX = e.type.includes('mouse') ? e.clientX : (e.changedTouches ? e.changedTouches[0].clientX : currentX);
+                let pullDeltaX = endX - startX;
+
+                if (pullDeltaX > 90) {
+                    triggerSwipe('right');
+                } else if (pullDeltaX < -90) {
+                    triggerSwipe('left');
+                } else {
+                    card.style.transform = 'translateX(0) rotate(0)';
+                    card.querySelector('.hint.left').style.opacity = 0;
+                    card.querySelector('.hint.right').style.opacity = 0;
+                }
+            };
+
+            card.addEventListener('mousedown', onDragStart);
+            window.addEventListener('mousemove', onDragMove);
+            window.addEventListener('mouseup', onDragEnd);
+
+            card.addEventListener('touchstart', onDragStart, { passive: true });
+            card.addEventListener('touchmove', onDragMove, { passive: true });
+            card.addEventListener('touchend', onDragEnd);
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
